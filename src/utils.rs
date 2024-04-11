@@ -2,6 +2,7 @@ use crate::errors::PQRSError;
 use crate::errors::PQRSError::CouldNotOpenFile;
 use arrow::{datatypes::Schema, record_batch::RecordBatch};
 use log::debug;
+use parquet::arrow::arrow_reader::{ParquetRecordBatchReader, ParquetRecordBatchReaderBuilder};
 use parquet::arrow::{arrow_reader::ArrowReaderBuilder, ArrowWriter};
 use parquet::file::reader::{FileReader, SerializedFileReader};
 use parquet::record::Row;
@@ -115,7 +116,7 @@ pub fn print_rows(
             writer.finish()?;
         }
         Formats::Csv => {
-            let arrow_reader = ArrowReaderBuilder::try_new(file)?;
+            let arrow_reader = ParquetRecordBatchReaderBuilder::try_new(file)?;
             let batch_reader = arrow_reader.with_batch_size(8192).build()?;
             let mut writer = arrow::csv::Writer::new(std::io::stdout());
 
@@ -256,7 +257,7 @@ pub fn get_row_batches(file: File) -> Result<ParquetData, PQRSError> {
 }
 
 /// Print the given parquet rows in json or json-like format
-fn print_row(row: &Row, format: Formats) {
+pub(crate) fn print_row(row: &Row, format: Formats) {
     match format {
         Formats::Default => println!("{}", row),
         Formats::Csv => println!("Unsupported! {}", row),
